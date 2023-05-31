@@ -1,5 +1,6 @@
+    Chart.defaults.font.size = 16;
+    var currentChartType = "line";
     document.addEventListener('DOMContentLoaded', function() {
-      console.log("On load");
       var urlParams = new URLSearchParams(window.location.search);
       var dataSource = urlParams.get('dataSource');
       if (dataSource) {
@@ -81,8 +82,19 @@
 
     var chartInstance; // Variable to store the chart instance
 
-    function changeChartType() {
-      var selectedChartType = document.getElementById('chartType').value;
+    function changeChartType(selectedChartType) {
+      if (!selectedChartType) {
+        selectedChartType = currentChartType;
+      }
+      currentChartType = selectedChartType;
+      if (selectedChartType == "histogram") {
+        document.getElementById('binCountSelector').style.display = "inline-block";
+        document.getElementById('yAxisSelector').style.display = "none";  
+      } else {
+        document.getElementById('binCountSelector').style.display = "none";
+        document.getElementById('yAxisSelector').style.display = "inline-block";  
+      }
+      
       var selectedXAxis = document.getElementById('xAxis').value;
       var selectedYAxis = document.getElementById('yAxis').value;
       var binCount = parseInt(document.getElementById('binCount').value);
@@ -117,9 +129,7 @@
         data: {
           datasets: [{
             label: yAxis,
-            data: chartData,
-            borderColor: 'rgb(75, 192, 192)',
-            fill: false
+            data: chartData
           }]
         },
         options: {
@@ -138,6 +148,14 @@
                 text: yAxis
               }
             }
+          },
+          plugins: {
+            colorschemes: {
+              scheme: 'brewer.Paired12'
+            },
+            legend: {
+                display: false,
+            }
           }
         }
       });
@@ -155,10 +173,8 @@
         type: 'scatter',
         data: {
           datasets: [{
-            label: yAxis,
-            data: chartData,
-            borderColor: 'rgb(75, 192, 192)',
-            backgroundColor: 'rgba(75, 192, 192, 0.5)'
+            label: xAxis + ", " + yAxis,
+            data: chartData
           }]
         },
         options: {
@@ -176,6 +192,14 @@
                 display: true,
                 text: yAxis
               }
+            }
+          },
+          plugins: {
+            colorschemes: {
+              scheme: 'brewer.Paired12'
+            },
+            legend: {
+              display: false,
             }
           }
         }
@@ -201,10 +225,6 @@
         };
       });
 
-      // Configure the colors for the box plots using chartjs-plugin-colorschemes
-      //Chart.register(ChartDataLabels);
-      //Chart.register(ChartColorSchemes.registered);
-
       var chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -217,7 +237,7 @@
           },
           x: {
             title: {
-              display: true,
+              display: false,
               text: yAxis,
             },
           },
@@ -276,9 +296,8 @@
             return bin.toFixed(2) + '-' + bins[index + 1].toFixed(2);
           }),
           datasets: [{
-            label: 'Histogram',
-            data: counts,
-            backgroundColor: 'rgba(75, 192, 192, 0.5)'
+            label: 'Frequency',
+            data: counts
           }]
         },
         options: {
@@ -296,6 +315,14 @@
                 display: true,
                 text: 'Frequency'
               }
+            }
+          },
+          plugins: {
+            colorschemes: {
+              scheme: 'brewer.Paired12'
+            },
+            legend: {
+              display: false,
             }
           }
         }

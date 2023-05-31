@@ -2,50 +2,56 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>My Web Page</title>
+  <title>Interactive graphs element</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    #container {
-      width: 50%;
-    }
-  </style>
 </head>
 <body>
   <div id="container">
     <canvas id="canvas"></canvas>
-  </div>
-
-  <input type="file" id="csvFileInput">
-
-  <div>
-    <label for="chartType">Select Chart Type:</label>
-    <select id="chartType" onchange="changeChartType()">
-      <option value="line">Line Chart</option>
-      <option value="scatter">Scatter Plot</option>
-      <option value="boxplot">Box Plot</option>
-      <option value="histogram">Histogram</option>
-    </select>
-  </div>
-
-  <div id="axisSelections" style="display: none;">
-    <div>
-      <label for="xAxis">Select X-Axis:</label>
-      <select id="xAxis" onchange="changeChartType()">
-        <!-- Options will be dynamically added based on selected chart type -->
-      </select>
+    <div id="axisSelections" style="display: none;">
+      <div id="xAxisSelector">
+        <label for="xAxis">X-Axis:</label>
+        <select id="xAxis" onchange="changeChartType()">
+          <!-- Options will be dynamically added based on selected chart type -->
+        </select>
+      </div>
+      <div id="yAxisSelector">
+        <label for="yAxis">Y-Axis:</label>
+        <select id="yAxis" onchange="changeChartType()">
+          <!-- Options will be dynamically added based on selected chart type -->
+        </select>
+      </div>
+      <div id="binCountSelector">
+         <label for="binCount">Bin Count:</label>
+         <input type="number" id="binCount" min="1" max="10" value="5" onchange="changeChartType()">
+      </div>
     </div>
-    <div>
-      <label for="yAxis">Select Y-Axis:</label>
-      <select id="yAxis" onchange="changeChartType()">
-        <!-- Options will be dynamically added based on selected chart type -->
-      </select>
+    <div id="chartType" class="chart-type-selector">
+      <button class="chart-button line-chart" onclick="changeChartType('line')">
+        <span class="icon"><img src="assets/line-chart-icon.png"/></span>
+        <span class="title">Line Chart</span>
+      </button>
+
+      <button class="chart-button scatter-plot" onclick="changeChartType('scatter')">
+        <span class="icon"><img src="assets/scatter-plot-icon.png"/></span>
+        <span class="title">Scatter Plot</span>
+      </button>
+
+      <button class="chart-button box-plot" onclick="changeChartType('boxplot')">
+        <span class="icon"><img src="assets/box-plot-icon.png"/></span>
+        <span class="title">Box Plot</span>
+      </button>
+
+      <button class="chart-button histogram" onclick="changeChartType('histogram')">
+        <span class="icon"><img src="assets/histogram-icon.png"/></span>
+        <span class="title">Histogram</span>
+      </button>
     </div>
-    <div>
-       <label for="binCount">Bin Count:</label>
-       <input type="number" id="binCount" min="1" max="10" value="5" onchange="changeChartType()">
+    <div id="uploadFile">
+      <label for="csvFileInput">Upload dataset in CSV</label>
+      <input type="file" id="csvFileInput">
     </div>
   </div>
-
   <!--<script src="https://unpkg.com/chart.js@3"></script>-->
   <script src="https://unpkg.com/chart.js"></script>
   <script src="https://unpkg.com/chartjs-plugin-colorschemes@latest/dist/chartjs-plugin-colorschemes.min.js"></script>
