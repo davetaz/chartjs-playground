@@ -1,4 +1,22 @@
-document.getElementById('csvFileInput').addEventListener('change', function(e) {
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("On load");
+      var urlParams = new URLSearchParams(window.location.search);
+      var dataSource = urlParams.get('dataSource');
+      if (dataSource) {
+        // Fetch the CSV data from the specified URL
+        fetch(dataSource)
+          .then(response => response.text())
+          .then(csvData => {
+            // Parse the CSV data into a JSON object
+            var jsonData = CSVtoJSON(csvData);
+            // Store the parsed JSON data in local storage
+            localStorage.setItem('jsonData', JSON.stringify(jsonData));
+            populateAxisSelections(); // Call the axis selection population function after parsing the CSV
+            changeChartType(); // Call the chart type change function after parsing the CSV
+          });
+        }
+      });
+    document.getElementById('csvFileInput').addEventListener('change', function(e) {
       var file = e.target.files[0];
       var reader = new FileReader();
 
@@ -80,7 +98,7 @@ document.getElementById('csvFileInput').addEventListener('change', function(e) {
       } else if (selectedChartType === 'scatter') {
         createScatterPlot(jsonData, selectedXAxis, selectedYAxis);
       } else if (selectedChartType === 'boxplot') {
-        createBoxPlot(jsonData);
+        createBoxPlot(jsonData, selectedXAxis, selectedYAxis);
       } else if (selectedChartType === 'histogram') {
         createHistogram(jsonData, selectedXAxis, binCount);
       }
@@ -164,9 +182,64 @@ document.getElementById('csvFileInput').addEventListener('change', function(e) {
       });
     }
 
-    function createBoxPlot(data) {
-      // Implement your code to create a box plot using the @sgratzl/chartjs-chart-boxplot library
-      // You can access the data variable, which contains the parsed CSV data
+    function removeUndefinedValues(array) {
+     return array.filter(value => typeof value !== 'undefined');
+    }
+
+    function createBoxPlot(data, xAxis, yAxis) {
+      // Get the unique values for the yAxis
+      var uniqueXAxisValues = removeUndefinedValues(Array.from(new Set(data.map(item => item[xAxis]))));
+
+      // Prepare the datasets for the box plot
+      var datasets = uniqueXAxisValues.map((xValue, index) => {
+        var filteredData = data.filter(item => item[xAxis] === xValue);
+        var values = filteredData.map(item => parseFloat(item[yAxis]));
+
+        return {
+          label: xValue,
+          data: [values],
+        };
+      });
+
+      // Configure the colors for the box plots using chartjs-plugin-colorschemes
+      //Chart.register(ChartDataLabels);
+      //Chart.register(ChartColorSchemes.registered);
+
+      var chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            title: {
+              display: true,
+              text: xAxis,
+            },
+          },
+          x: {
+            title: {
+              display: true,
+              text: yAxis,
+            },
+          },
+        },
+        plugins: {
+          colorschemes: {
+            scheme: 'brewer.Paired12'
+          },
+        },
+      };
+
+      // Create the box plot chart
+      chartInstance = new Chart(document.getElementById('canvas'), {
+        type: 'boxplot',
+        data: {
+          labels: [yAxis],
+          datasets: datasets,
+        },
+        options: chartOptions,
+      });
+
+      document.getElementById('canvas').style.height = '460px';
     }
 
     function createHistogram(data, xAxis, binCount) {
@@ -176,7 +249,6 @@ document.getElementById('csvFileInput').addEventListener('change', function(e) {
       }).filter(function(value) {
         return value !== null;
       });
-      console.log(values);
       // Calculate logical boundaries for the bins
       var minValue = Math.min(...values);
       var maxValue = Math.max(...values);
