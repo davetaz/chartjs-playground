@@ -269,20 +269,21 @@
       }).filter(function(value) {
         return value !== null;
       });
+
       // Calculate logical boundaries for the bins
       var minValue = Math.min(...values);
       var maxValue = Math.max(...values);
+
       var binWidth = (maxValue - minValue) / binCount;
       var bins = [];
       for (var i = 0; i <= binCount; i++) {
         bins.push(minValue + i * binWidth);
       }
-
       var counts = Array(binCount).fill(0);
       for (var i = 0; i < values.length; i++) {
         var value = parseFloat(values[i]);
         for (var j = 0; j < binCount; j++) {
-          if (value >= bins[j] && value < bins[j + 1]) {
+          if (value >= bins[j] && value <= bins[j + 1]) {
             counts[j]++;
             break;
           }
