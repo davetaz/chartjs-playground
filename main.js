@@ -1,5 +1,6 @@
     Chart.defaults.font.size = 16;
     var currentChartType = "line";
+    var colorCounter = 0;
     document.addEventListener('DOMContentLoaded', function() {
       var urlParams = new URLSearchParams(window.location.search);
       var dataSource = urlParams.get('dataSource');
@@ -55,6 +56,7 @@
       var jsonData = JSON.parse(localStorage.getItem('jsonData'));
       var xAxisSelect = document.getElementById('xAxis');
       var yAxisSelect = document.getElementById('yAxis');
+      var pointColorSelect = document.getElementById('pointColor')
 
       // Clear existing options
       while (xAxisSelect.firstChild) {
@@ -63,17 +65,24 @@
       while (yAxisSelect.firstChild) {
         yAxisSelect.removeChild(yAxisSelect.firstChild);
       }
+      while (pointColorSelect.firstChild) {
+        pointColorSelect.removeChild(pointColorSelect.firstChild);
+      }
 
       // Populate options with keys from JSON data
       Object.keys(jsonData[0]).forEach(function(key) {
         var xAxisOption = document.createElement('option');
         var yAxisOption = document.createElement('option');
+        var pointColorOption = document.createElement('option');
         xAxisOption.value = key;
         yAxisOption.value = key;
+        pointColorOption.value = key;
         xAxisOption.text = key;
         yAxisOption.text = key;
+        pointColorOption.text = key;
         xAxisSelect.appendChild(xAxisOption);
         yAxisSelect.appendChild(yAxisOption);
+        pointColorSelect.appendChild(pointColorOption);
       });
 
       // Show the axis selections
@@ -83,6 +92,7 @@
     var chartInstance; // Variable to store the chart instance
 
     function changeChartType(selectedChartType) {
+      colorCounter = 0;
       if (!selectedChartType) {
         selectedChartType = currentChartType;
       }
@@ -94,9 +104,15 @@
         document.getElementById('binCountSelector').style.display = "none";
         document.getElementById('yAxisSelector').style.display = "inline-block";  
       }
+      if (selectedChartType == "scatter") {
+        document.getElementById('pointColorSelector').style.display = "inline-block";
+      } else {
+        document.getElementById('pointColorSelector').style.display = "none";
+      }
       
       var selectedXAxis = document.getElementById('xAxis').value;
       var selectedYAxis = document.getElementById('yAxis').value;
+      var selectedColourValues = document.getElementById('pointColor').value;
       var binCount = parseInt(document.getElementById('binCount').value);
       var jsonData = JSON.parse(localStorage.getItem('jsonData'));
 
@@ -108,7 +124,7 @@
       if (selectedChartType === 'line') {
         createLineChart(jsonData, selectedXAxis, selectedYAxis);
       } else if (selectedChartType === 'scatter') {
-        createScatterPlot(jsonData, selectedXAxis, selectedYAxis);
+        createScatterPlot(jsonData, selectedXAxis, selectedYAxis,selectedColourValues);
       } else if (selectedChartType === 'boxplot') {
         createBoxPlot(jsonData, selectedXAxis, selectedYAxis);
       } else if (selectedChartType === 'histogram') {
@@ -161,49 +177,79 @@
       });
     }
 
-    function createScatterPlot(data, xAxis, yAxis) {
-      var chartData = data.map(function(item) {
-        return {
-          x: item[xAxis],
-          y: item[yAxis]
-        };
+    function createScatterPlot(data, xAxis, yAxis, colorField) {
+      var xValues = data.map(function(item) {
+        return item[xAxis];
       });
+
+      var yValues = data.map(function(item) {
+        return item[yAxis];
+      });
+
+      var colorValues = data.map(function(item) {
+        return item[colorField];
+      });
+
+      colorValues = removeUndefinedValues(colorValues);
+      console.log(colorValues);
+      var uniqueColorValues = [...new Set(colorValues)];
+
+      console.log(uniqueColorValues);
+      var scatterData = {
+        datasets: uniqueColorValues.map(function(value) {
+          var filteredData = data.filter(function(item) {
+            return item[colorField] === value;
+          });
+
+          return {
+            data: filteredData.map(function(item) {
+              return {
+                x: item[xAxis],
+                y: item[yAxis],
+              };
+            }),
+            backgroundColor: getColor(),
+            label: value.toString(),
+          };
+        }),
+      };
+
+      var scatterOptions = {
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: xAxis,
+            },
+          },
+          y: {
+            title: {
+              display: true,
+              text: yAxis,
+            },
+          },
+        },
+        plugins: {
+          legend: {
+            display: true,
+          },
+        },
+      };
 
       chartInstance = new Chart(document.getElementById('canvas'), {
         type: 'scatter',
-        data: {
-          datasets: [{
-            label: xAxis + ", " + yAxis,
-            data: chartData
-          }]
-        },
-        options: {
-          scales: {
-            x: {
-              display: true,
-              title: {
-                display: true,
-                text: xAxis
-              }
-            },
-            y: {
-              display: true,
-              title: {
-                display: true,
-                text: yAxis
-              }
-            }
-          },
-          plugins: {
-            colorschemes: {
-              scheme: 'brewer.Paired12'
-            },
-            legend: {
-              display: false,
-            }
-          }
-        }
+        data: scatterData,
+        options: scatterOptions,
       });
+    }
+
+    // Helper function to generate random colors
+    function getColor() {
+      var Tableau20 = ['#4E79A7', '#A0CBE8', '#F28E2B', '#FFBE7D', '#59A14F', '#8CD17D', '#B6992D', '#F1CE63', '#499894', '#86BCB6', '#E15759', '#FF9D9A', '#79706E', '#BAB0AC', '#D37295', '#FABFD2', '#B07AA1', '#D4A6C8', '#9D7660', '#D7B5A6'];
+      var Paired12 = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928'];
+      var color = Paired12[colorCounter]; 
+      colorCounter += 1;
+      return color; 
     }
 
     function removeUndefinedValues(array) {
@@ -232,13 +278,13 @@
           y: {
             title: {
               display: true,
-              text: xAxis,
+              text: yAxis,
             },
           },
           x: {
             title: {
-              display: false,
-              text: yAxis,
+              display: true,
+              text: xAxis,
             },
           },
         },
@@ -253,7 +299,7 @@
       chartInstance = new Chart(document.getElementById('canvas'), {
         type: 'boxplot',
         data: {
-          labels: [yAxis],
+          labels: [""],
           datasets: datasets,
         },
         options: chartOptions,
