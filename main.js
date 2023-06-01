@@ -143,7 +143,6 @@
       if (chartInstance) {
         chartInstance.destroy();
       }
-      console.log(selectedChartType);
       // Create the desired chart based on the selected chart type
       if (selectedChartType === 'line') {
         createLineChart(jsonData, selectedXAxis, selectedYAxis);
