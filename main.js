@@ -70,6 +70,10 @@
       }
 
       // Populate options with keys from JSON data
+      var pointColorOption = document.createElement('option');
+      pointColorOption.value = "none";
+      pointColorOption.text = "none";
+      pointColorSelect.appendChild(pointColorOption);
       Object.keys(jsonData[0]).forEach(function(key) {
         var xAxisOption = document.createElement('option');
         var yAxisOption = document.createElement('option');
@@ -99,15 +103,18 @@
       currentChartType = selectedChartType;
       if (selectedChartType == "histogram") {
         document.getElementById('binCountSelector').style.display = "inline-block";
+        document.getElementById('pointColorSelector').style.display = "inline-block";
         document.getElementById('yAxisSelector').style.display = "none";  
       } else {
         document.getElementById('binCountSelector').style.display = "none";
+        document.getElementById('pointColorSelector').style.display = "none";
         document.getElementById('yAxisSelector').style.display = "inline-block";  
       }
       if (selectedChartType == "scatter") {
         document.getElementById('pointColorSelector').style.display = "inline-block";
-      } else {
-        document.getElementById('pointColorSelector').style.display = "none";
+      }
+      if (selectedChartType != "histogram" && selectedChartType != "scatter") {
+        document.getElementById('pointColorSelector').style.display = "none"; 
       }
       
       var selectedXAxis = document.getElementById('xAxis').value;
@@ -124,11 +131,13 @@
       if (selectedChartType === 'line') {
         createLineChart(jsonData, selectedXAxis, selectedYAxis);
       } else if (selectedChartType === 'scatter') {
-        createScatterPlot(jsonData, selectedXAxis, selectedYAxis,selectedColourValues);
+        createScatterPlot(jsonData, selectedXAxis, selectedYAxis, selectedColourValues);
       } else if (selectedChartType === 'boxplot') {
         createBoxPlot(jsonData, selectedXAxis, selectedYAxis);
+      } else if (selectedChartType === 'histogram' && selectedColourValues != "none") {
+        createHistogram(jsonData, selectedXAxis, binCount, selectedColourValues);
       } else if (selectedChartType === 'histogram') {
-        createHistogram(jsonData, selectedXAxis, binCount);
+        createHistogramAllData(jsonData, selectedXAxis, binCount);
       }
     }
 
@@ -185,34 +194,46 @@
       var yValues = data.map(function(item) {
         return item[yAxis];
       });
-
+      
       var colorValues = data.map(function(item) {
         return item[colorField];
       });
 
       colorValues = removeUndefinedValues(colorValues);
-      console.log(colorValues);
       var uniqueColorValues = [...new Set(colorValues)];
 
-      console.log(uniqueColorValues);
-      var scatterData = {
-        datasets: uniqueColorValues.map(function(value) {
-          var filteredData = data.filter(function(item) {
-            return item[colorField] === value;
-          });
-
-          return {
-            data: filteredData.map(function(item) {
+      if (colorField == "none") {
+        var scatterData = {
+          datasets: [{
+            label: xAxis + ", " + yAxis,
+            data: data.map(function(item) {
               return {
                 x: item[xAxis],
-                y: item[yAxis],
+                y: item[yAxis]
               };
-            }),
-            backgroundColor: getColor(),
-            label: value.toString(),
-          };
-        }),
-      };
+            })
+          }]
+        };
+      } else {
+        var scatterData = {
+          datasets: uniqueColorValues.map(function(value) {
+            var filteredData = data.filter(function(item) {
+              return item[colorField] === value;
+            });
+
+            return {
+              data: filteredData.map(function(item) {
+                return {
+                  x: item[xAxis],
+                  y: item[yAxis],
+                };
+              }),
+              backgroundColor: getColor(),
+              label: value.toString(),
+            };
+          }),
+        };
+      }
 
       var scatterOptions = {
         scales: {
@@ -308,7 +329,128 @@
       document.getElementById('canvas').style.height = '460px';
     }
 
-    function createHistogram(data, xAxis, binCount) {
+    function createHistogram(data, xAxis, binCount, splitField) {
+      var xValues = data.map(function(item) {
+        return item[xAxis];
+      });
+
+      var splitValues = data.map(function(item) {
+        return item[splitField];
+      });
+
+      var uniqueSplitValues = [...new Set(splitValues)];
+
+      uniqueSplitValues = removeUndefinedValues(uniqueSplitValues);
+      xValues = removeUndefinedValues(xValues);
+      var min = Math.min(...xValues);
+      var max = Math.max(...xValues);
+      
+      var datasets = uniqueSplitValues.map(function(value) {
+        var filteredData = data.filter(function(item) {
+          return item[splitField] === value;
+        });
+
+        var histogramData = createHistogramData(filteredData.map(function(item) {
+          return item[xAxis];
+        }), binCount, min, max);
+
+        return {
+          label: value.toString(),
+          data: histogramData,
+          backgroundColor: getColor(),
+          borderColor: 'rgba(0, 0, 0, 0.5)',
+          borderWidth: 1,
+        };
+      });
+      /*
+        var datasets = uniqueSplitValues.map(function(value) {
+        var filteredData = data.filter(function(item) {
+          return item[splitField] === value;
+        });
+
+        var histogramData = createHistogramData(filteredData.map(function(item) {
+          return item[xAxis];
+        }), binCount);
+        console.log(histogramData);
+        return {
+          label: value.toString(),
+          data: histogramData,
+          backgroundColor: getColor(),
+          borderColor: 'rgba(0, 0, 0, 0.5)',
+          borderWidth: 1,
+        };
+      });
+      */
+      
+      var histogramOptions = {
+        responsive: true,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: xAxis,
+            },
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Frequency',
+            },
+          },
+        },
+        plugins: {
+          legend: {
+            display: true,
+          },
+        },
+      };
+
+      chartInstance = new Chart(document.getElementById('canvas'), {
+        type: 'bar',
+        data: {
+          labels: createHistogramLabels(binCount, min, max),
+          datasets: datasets,
+        },
+        options: histogramOptions,
+      });
+
+    }
+
+    // Helper function to create histogram data
+    function createHistogramData(data, binCount,min,max) {
+      var binSize = (max - min) / binCount;
+
+      var histogramData = Array.from({ length: binCount }, function() {
+        return 0;
+      });
+
+      data.forEach(function(value) {
+        var binIndex = Math.floor((value - min) / binSize);
+        if (binIndex == binCount) {
+          binIndex = binIndex - 1;
+        }
+        if (binIndex >= 0 && binIndex < binCount) {
+          histogramData[binIndex]++;
+        }
+      });
+
+      return histogramData;
+    }
+
+    // Helper function to create histogram labels
+    function createHistogramLabels(binCount, min, max) {
+      var binSize = (max - min) / binCount;
+      var labels = [];
+
+      for (var i = 0; i < binCount; i++) {
+        var label = `${(min + i * binSize).toFixed(2)} - ${(min + (i + 1) * binSize).toFixed(2)}`;
+        labels.push(label);
+      }
+
+      return labels;
+    }
+    
+    function createHistogramAllData(data, xAxis, binCount) {
       var values = data.map(function(item) {
         var value = item[xAxis];
         return isNaN(value) ? null : value;
@@ -375,3 +517,4 @@
         }
       });
     }
+    
