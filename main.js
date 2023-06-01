@@ -1,10 +1,17 @@
     Chart.defaults.font.size = 16;
     var currentChartType = "line";
     var colorCounter = 0;
+    var defaultXAxis;
+    var defaultYAxis;
+    var defaultColorSelector;
     document.addEventListener('DOMContentLoaded', function() {
       var urlParams = new URLSearchParams(window.location.search);
       var dataSource = urlParams.get('dataSource');
       if (dataSource) {
+        currentChartType = urlParams.get('chartType') || 'line';
+        defaultXAxis = urlParams.get('xAxis') || '';
+        defaultYAxis = urlParams.get('yAxis') || '';
+        defaultColorSelector = urlParams.get('colorSelector') || '';
         // Fetch the CSV data from the specified URL
         fetch(dataSource)
           .then(response => response.text())
@@ -79,8 +86,17 @@
         var yAxisOption = document.createElement('option');
         var pointColorOption = document.createElement('option');
         xAxisOption.value = key;
+        if (key === defaultXAxis) {
+          xAxisOption.selected = true;
+        }
         yAxisOption.value = key;
+        if (key === defaultYAxis) {
+          yAxisOption.selected = true;
+        }
         pointColorOption.value = key;
+        if (key.trim() === defaultColorSelector) {
+          pointColorOption.selected = true;
+        }
         xAxisOption.text = key;
         yAxisOption.text = key;
         pointColorOption.text = key;
@@ -127,6 +143,7 @@
       if (chartInstance) {
         chartInstance.destroy();
       }
+      console.log(selectedChartType);
       // Create the desired chart based on the selected chart type
       if (selectedChartType === 'line') {
         createLineChart(jsonData, selectedXAxis, selectedYAxis);

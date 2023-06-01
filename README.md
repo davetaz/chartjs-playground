@@ -35,6 +35,25 @@ This Chart Visualization application was created by David Tarrant and ChatGPT. I
 
 5. To switch to a different chart type, select the new chart type using the buttons.
 
+## Query Parameters
+
+- `dataSource`: Specify a URL of a CSV to load
+
+You can use the following query parameters in the URL to pre-select default values in the chart options (only works when loading data from a URL):
+
+- `chartType`: Specify the default chart type (line, scatter, boxplot, histogram).
+- `xAxis`: Specify the default value for the X-axis selection.
+- `yAxis`: Specify the default value for the Y-axis selection (line and scatter).
+- `colorSelector`: Specify the default value for the Color Selector selection (scatter and histogram).
+
+For example, to set the default chart type to "scatter", X-axis to "xValue", Y-axis to "yValue", and Color Selector to another dimension from the dataset, e.g. "category".
+
+By example: `index.html?chartType=scatter&xAxis=xValue&yAxis=yValue&colorSelector=category`.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE.md](LICENSE.md) file for details.
+
 ## Technologies Used
 
 - HTML
